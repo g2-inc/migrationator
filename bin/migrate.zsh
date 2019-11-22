@@ -26,6 +26,7 @@
 
 GAM="${HOME}/projects/GAM/src/gam.py"
 
+batchstep=15
 matter="migration-$(date '+%F_%T')"
 odir="/tank/export"
 
@@ -167,8 +168,17 @@ main() {
 
 	mkdir -p ${odir}/${matter}
 
-	run_batch "$(sed -n 1,5p ${ifile})"
-	res=${?}
+	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
+	for ((i=1; ${i} < ${naccounts}; i+=${batchstep})); do
+		floor=${i}
+		ceiling=$((${floor} + ${batchstep}))
+		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
+		run_batch "$(sed -n ${floor},${ceiling}p ${ifile})"
+		res=${?}
+		if [ ${res} -gt 0 ]; then
+			break
+		fi
+	done
 
 	${GAM} update matter ${matter} action close
 	${GAM} update matter ${matter} action delete
