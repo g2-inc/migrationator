@@ -24,46 +24,17 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-matter="migration-$(date '+%F_%T')"
 GAM="${HOME}/projects/GAM/src/gam.py"
 
-main() {
-	local acct
-	local hasmbox
-	local ifile
+matter="migration-$(date '+%F_%T')"
+odir="/tank/export"
+
+run_batch() {
 	local res
-	local self
+	local users
 
-	self=${0}
-	shift
-
-	while getopts 'i:' o; do
-		case "${o}" in
-			i)
-				ifile="${OPTARG}"
-				;;
-			*)
-				;;
-		esac
-	done
-
-	if [ ! -f "${ifile}" ]; then
-		echo "Please specify the input file with -i"
-		exit 1
-	fi
-
-	${GAM} create vaultmatter \
-	    name ${matter} \
-	    description "Vault export"
-	res=${?}
-	if [ ${res} -gt 0 ]; then
-		return ${res}
-	fi
-
-	echo "[*] Sleeping for 60 seconds to allow google to catch up."
-	sleep 60
-
-	while read line; do
+	users=${1}
+	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
 		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
@@ -90,9 +61,51 @@ main() {
 
 		echo "[*] Sleeping for 60 seconds due to API quota"
 		sleep 60
-	done < ${ifile}
+	done
 
-	while read line; do
+	echo "[+] Exports in this batch initiated. Now waiting for download availability."
+	while true; do
+		dlready=1
+		echo ${users} | while read line; do
+			if [ ${dlready} -eq 0 ]; then
+				break
+			fi
+
+			acct=$(echo ${line} | awk -F ',' '{print $1;}')
+			hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
+			haslicense=$(echo ${line} | grep -Fi "google vault")
+			if [ ${hasmbox} = "False" ]; then
+				continue
+			fi
+			if [ -z "${haslicense}" ]; then
+				continue
+			fi
+
+			exportname="export-mail-${acct:gs/@/_}"
+			exportinfo=$(${GAM} info export ${matter} ${exportname})
+			exportstatus=$(echo ${exportinfo} | \
+			    grep '^ status: ' | \
+			    awk '{print $2;}')
+			case "${exportstatus}" in
+				"COMPLETED")
+					;;
+				*)
+					dlready=0
+					;;
+			esac
+
+			echo "[*] ${acct} status: ${exportstatus}"
+			sleep 60
+		done
+
+		if [ ${dlready} -eq 1 ]; then
+			break
+		fi
+	done
+
+	echo "[+] Downloads available. Downloading this batch now."
+
+	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
 		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
@@ -104,18 +117,63 @@ main() {
 		fi
 
 		exportname="export-mail-${acct:gs/@/_}"
-		exportstatus=$(${GAM} info export ${matter} ${exportname} | \
-		    grep '^status:' | awk '{print $2;}')
-		echo "[*] ${acct} export status: ${exportstatus}"
 
-		echo "[*] Sleeping for 60 seconds due to API quota"
-		sleep 60
-	done < ${ifile}
+		${GAM} download export ${matter} ${exportname} targetfolder ${odir}/${matter}
+		res=${?}
+		if [ ${res} -gt 0 ]; then
+			return ${res}
+		fi
+	done
+}
+
+main() {
+	local acct
+	local hasmbox
+	local ifile
+	local res
+	local self
+
+	self=${0}
+	shift
+
+	while getopts 'i:o:' o; do
+		case "${o}" in
+			i)
+				ifile="${OPTARG}"
+				;;
+			o)
+				odir="${OPTARG}"
+				;;
+			*)
+				;;
+		esac
+	done
+
+	if [ ! -f "${ifile}" ]; then
+		echo "Please specify the input file with -i"
+		exit 1
+	fi
+
+	${GAM} create vaultmatter \
+	    name ${matter} \
+	    description "Vault export"
+	res=${?}
+	if [ ${res} -gt 0 ]; then
+		return ${res}
+	fi
+
+	echo "[*] Sleeping for 60 seconds to allow google to catch up."
+	sleep 60
+
+	mkdir -p ${odir}/${matter}
+
+	run_batch "$(sed -n 1,5p ${ifile})"
+	res=${?}
 
 	${GAM} update matter ${matter} action close
 	${GAM} update matter ${matter} action delete
 
-	return 0
+	return ${res}
 }
 
 main ${0} $*
