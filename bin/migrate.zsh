@@ -119,7 +119,12 @@ run_batch() {
 
 		exportname="export-mail-${acct:gs/@/_}"
 
-		${GAM} download export ${matter} ${exportname} targetfolder ${odir}/${matter}
+		mkdir -p ${odir}/${matter}/${acct}
+
+		echo "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
+
+		${GAM} download export ${matter} ${exportname} \
+		    targetfolder ${odir}/${matter}/${acct}
 		res=${?}
 		if [ ${res} -gt 0 ]; then
 			return ${res}
@@ -171,7 +176,7 @@ main() {
 	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
 	for ((i=1; ${i} < ${naccounts}; i+=${batchstep})); do
 		floor=${i}
-		ceiling=$((${floor} + ${batchstep}))
+		ceiling=$((${floor} + ${batchstep} - 1))
 		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
 		run_batch "$(sed -n ${floor},${ceiling}p ${ifile})"
 		res=${?}
