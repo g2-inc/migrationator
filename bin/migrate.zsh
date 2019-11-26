@@ -45,33 +45,17 @@ TOPDIR=$(get_topdir ${0})
 . ${TOPDIR}/../lib/util.zsh
 
 main() {
-	local acct
-	local hasmbox
-	local ifile
 	local res
 	local self
-	local users
+	local verb
 
-	self=${0}
+	self=${1}
 	shift
 
-	while getopts 'i:o:' o; do
-		case "${o}" in
-			i)
-				ifile="${OPTARG}"
-				;;
-			o)
-				odir="${OPTARG}"
-				;;
-			*)
-				;;
-		esac
-	done
-
-	if [ ! -f "${ifile}" ]; then
-		echo "Please specify the input file with -i"
-		exit 1
-	fi
+	verb=${@[${OPTIND}]}
+	[ -z "${verb}" ] && usage ${self}
+	shift
+	sanity_checks ${self} ${verb} || exit 1
 
 	${GAM} create vaultmatter \
 	    name ${matter} \
@@ -81,33 +65,10 @@ main() {
 		return ${res}
 	fi
 
-	echo "[*] Sleeping for 60 seconds to allow google to catch up."
 	sleep 60
 
-	mkdir -p ${odir}/${matter}
-
-	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
-	for ((i=1; ${i} < ${naccounts}; i+=${batchstep})); do
-		floor=${i}
-		ceiling=$((${floor} + ${batchstep} - 1))
-		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
-		users=$(sed -n ${floor},${ceiling}p ${ifile})
-		email_init_batch "${users}"
-		res=${?}
-		if [ ${res} -gt 0 ]; then
-			break
-		fi
-		email_execute_batch "${users}"
-		res=${?}
-		if [ ${res} -gt 0 ]; then
-			break
-		fi
-		email_download_batch "${users}"
-		res=${?}
-		if [ ${res} -gt 0 ]; then
-			break
-		fi
-	done
+	$(echo ${verb}_run) $@
+	res=${?}
 
 	cleanup
 

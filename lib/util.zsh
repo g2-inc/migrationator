@@ -24,6 +24,30 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+usage() {
+	echo "USAGE: ${1} -i /path/to/input/file verb" 1>&2
+	exit 1
+}
+
+sanity_checks() {
+	local self
+	local verb
+
+	self=${1}
+	verb=${2}
+
+	case "${verb}" in
+		email)
+			;;
+		*)
+			echo "Unknown verb ${verb}"
+			usage ${self}
+			;;
+	esac
+
+	return 0
+}
+
 cleanup() {
 	${GAM} update matter ${matter} action close
 	${GAM} update matter ${matter} action delete
