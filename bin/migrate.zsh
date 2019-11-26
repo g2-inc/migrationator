@@ -42,6 +42,7 @@ get_topdir() {
 TOPDIR=$(get_topdir ${0})
 
 . ${TOPDIR}/../lib/email.zsh
+. ${TOPDIR}/../lib/util.zsh
 
 main() {
 	local acct
@@ -108,8 +109,7 @@ main() {
 		fi
 	done
 
-	${GAM} update matter ${matter} action close
-	${GAM} update matter ${matter} action delete
+	cleanup
 
 	return ${res}
 }

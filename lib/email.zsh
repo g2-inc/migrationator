@@ -137,10 +137,11 @@ email_download_batch() {
 
 		echo "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
 
-		${GAM} download export ${matter} ${exportname} \
-		    targetfolder ${odir}/${matter}/${acct}
+		output=$(${GAM} download export ${matter} ${exportname} \
+		    targetfolder ${odir}/${matter}/${acct})
 		res=${?}
 		if [ ${res} -gt 0 ]; then
+			echo "${output}"
 			return ${res}
 		fi
 	done
