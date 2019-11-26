@@ -24,6 +24,10 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+email_need_matter() {
+	return 1
+}
+
 email_run() {
 	local naccounts
 	local o

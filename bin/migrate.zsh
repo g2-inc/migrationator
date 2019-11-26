@@ -57,18 +57,20 @@ main() {
 	shift
 	sanity_checks ${self} ${verb} || exit 1
 
-	${GAM} create vaultmatter \
-	    name ${matter} \
-	    description "Vault export"
-	res=${?}
-	if [ ${res} -gt 0 ]; then
-		return ${res}
-	fi
-
-	sleep 60
-
 	# We passed sanity checks, so we know this verb is supported.
 	. ${TOPDIR}/../lib/verbs/${verb}.zsh
+	$(echo ${verb}_need_matter)
+	if [ ${?} -eq 1 ]; then
+		${GAM} create vaultmatter \
+		    name ${matter} \
+		    description "Vault export"
+		res=${?}
+		if [ ${res} -gt 0 ]; then
+			return ${res}
+		fi
+
+		sleep 60
+	fi
 	$(echo ${verb}_run) $@
 	res=${?}
 
