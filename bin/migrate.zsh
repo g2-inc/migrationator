@@ -30,107 +30,18 @@ batchstep=15
 matter="migration-$(date '+%F_%T')"
 odir="/tank/export"
 
-run_batch() {
-	local res
-	local users
+get_topdir() {
+	local self
 
-	users=${1}
-	echo ${users} | while read line; do
-		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
-		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
-		if [ -z "${haslicense}" ]; then
-			continue
-		fi
+	self=${1}
 
-		echo "[*] Initiating mail export of account ${acct}"
-
-		exportname="export-mail-${acct:gs/@/_}"
-		${GAM} create export \
-		    format pst \
-		    name ${exportname} \
-		    matter ${matter} corpus mail \
-		    accounts ${acct}
-		res=${?}
-		if [ ${res} -gt 0 ]; then
-			echo "    [-] Unable to initiate mail vault export of ${acct}"
-			return 1
-		fi
-
-		echo "[*] Sleeping for 60 seconds due to API quota"
-		sleep 60
-	done
-
-	echo "[+] Exports in this batch initiated. Now waiting for download availability."
-	while true; do
-		dlready=1
-		echo ${users} | while read line; do
-			if [ ${dlready} -eq 0 ]; then
-				break
-			fi
-
-			acct=$(echo ${line} | awk -F ',' '{print $1;}')
-			hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
-			haslicense=$(echo ${line} | grep -Fi "google vault")
-			if [ ${hasmbox} = "False" ]; then
-				continue
-			fi
-			if [ -z "${haslicense}" ]; then
-				continue
-			fi
-
-			exportname="export-mail-${acct:gs/@/_}"
-			exportinfo=$(${GAM} info export ${matter} ${exportname})
-			exportstatus=$(echo ${exportinfo} | \
-			    grep '^ status: ' | \
-			    awk '{print $2;}')
-			case "${exportstatus}" in
-				"COMPLETED")
-					;;
-				*)
-					dlready=0
-					;;
-			esac
-
-			echo "[*] ${acct} status: ${exportstatus}"
-			sleep 60
-		done
-
-		if [ ${dlready} -eq 1 ]; then
-			break
-		fi
-	done
-
-	echo "[+] Downloads available. Downloading this batch now."
-
-	echo ${users} | while read line; do
-		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
-		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
-		if [ -z "${haslicense}" ]; then
-			continue
-		fi
-
-		exportname="export-mail-${acct:gs/@/_}"
-
-		mkdir -p ${odir}/${matter}/${acct}
-
-		echo "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
-
-		${GAM} download export ${matter} ${exportname} \
-		    targetfolder ${odir}/${matter}/${acct}
-		res=${?}
-		if [ ${res} -gt 0 ]; then
-			return ${res}
-		fi
-	done
+	echo $(realpath $(dirname ${self}))
+	return ${?}
 }
+
+TOPDIR=$(get_topdir ${0})
+
+. ${TOPDIR}/../lib/email.zsh
 
 main() {
 	local acct
@@ -138,6 +49,7 @@ main() {
 	local ifile
 	local res
 	local self
+	local users
 
 	self=${0}
 	shift
@@ -178,7 +90,18 @@ main() {
 		floor=${i}
 		ceiling=$((${floor} + ${batchstep} - 1))
 		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
-		run_batch "$(sed -n ${floor},${ceiling}p ${ifile})"
+		users=$(sed -n ${floor},${ceiling}p ${ifile})
+		email_init_batch "${users}"
+		res=${?}
+		if [ ${res} -gt 0 ]; then
+			break
+		fi
+		email_execute_batch "${users}"
+		res=${?}
+		if [ ${res} -gt 0 ]; then
+			break
+		fi
+		email_download_batch "${users}"
 		res=${?}
 		if [ ${res} -gt 0 ]; then
 			break
