@@ -24,58 +24,48 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-GAM="${HOME}/projects/GAM/src/gam.py"
-
-batchstep=15
-matter="migration-$(date '+%F_%T')"
-odir="/tank/export"
-
-get_topdir() {
-	local self
-
-	self=${1}
-
-	echo $(realpath $(dirname ${self}))
-	return ${?}
-}
-
-TOPDIR=$(get_topdir ${0})
-
-. ${TOPDIR}/../lib/email.zsh
-. ${TOPDIR}/../lib/util.zsh
-
-main() {
+email_run() {
+	local naccounts
+	local o
 	local res
-	local self
-	local verb
+	local users
 
-	self=${1}
-	shift
+	while getopts 'i:o:' o; do
+		case "${o}" in
+			i)
+				ifile="${OPTARG}"
+				;;
+			o)
+				odir="${OPTARG}"
+				;;
+			*)
+				;;
+		esac
+	done
 
-	verb=${@[${OPTIND}]}
-	[ -z "${verb}" ] && usage ${self}
-	shift
-	sanity_checks ${self} ${verb} || exit 1
-
-	${GAM} create vaultmatter \
-	    name ${matter} \
-	    description "Vault export"
-	res=${?}
-	if [ ${res} -gt 0 ]; then
-		return ${res}
+	if [ ! -f "${ifile}" ]; then
+		echo "Please specify the input file with -i"
+		echo "${ifile} does not exist"
+		exit 1
 	fi
 
-	sleep 60
+	mkdir -p ${odir}/${matter} || return ${?}
 
-	# We passed sanity checks, so we know this verb is supported.
-	. ${TOPDIR}/../lib/verbs/${verb}.zsh
-	$(echo ${verb}_run) $@
-	res=${?}
+	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
+	for ((i=1; ${i} < ${naccounts}; i+=${batchstep})); do
+		floor=${i}
+		ceiling=$((${floor} + ${batchstep} - 1))
+		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
 
-	cleanup
+		users=$(sed -n ${floor},${ceiling}p ${ifile})
 
-	return ${res}
+		email_init_batch "${users}" || return ${?}
+		email_execute_batch "${users}" || return ${?}
+		email_download_batch "${users}" || return ${?}
+
+		res=${?}
+		[ ${res} -gt 0 ] && break
+	done
+
+	return 0
 }
-
-main ${0} $*
-exit ${?}
