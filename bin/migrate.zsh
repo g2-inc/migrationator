@@ -28,7 +28,6 @@ GAM="${HOME}/projects/GAM/src/gam.py"
 
 batchstep=15
 matter="migration-$(date '+%F_%T')"
-odir="/tank/export"
 
 get_topdir() {
 	local self

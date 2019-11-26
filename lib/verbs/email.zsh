@@ -24,6 +24,8 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+odir=""
+
 email_need_matter() {
 	return 1
 }
@@ -50,6 +52,11 @@ email_run() {
 	if [ ! -f "${ifile}" ]; then
 		echo "Please specify the input file with -i"
 		echo "${ifile} does not exist"
+		exit 1
+	fi
+
+	if [ -z "${odir}" ]; then
+		echo "Please specify the output directory with -o"
 		exit 1
 	fi
 
