@@ -112,11 +112,13 @@ email_execute_batch() {
 }
 
 email_download_batch() {
+	local odir
 	local output
 	local res
 	local users
 
-	users=${1}
+	odir=${1}
+	users=${2}
 	echo "[+] Downloads available. Downloading this batch now."
 
 	echo ${users} | while read line; do

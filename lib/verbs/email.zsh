@@ -24,20 +24,25 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-odir=""
-
 email_need_matter() {
 	return 1
 }
 
 email_run() {
+	local batchstep
 	local naccounts
 	local o
+	local odir
 	local res
 	local users
 
-	while getopts 'i:o:' o; do
+	batchstep=15
+
+	while getopts 'b:i:o:' o; do
 		case "${o}" in
+			b)
+				batchstep=${OPTARG}
+				;;
 			i)
 				ifile="${OPTARG}"
 				;;
@@ -72,7 +77,7 @@ email_run() {
 
 		email_init_batch "${users}" || return ${?}
 		email_execute_batch "${users}" || return ${?}
-		email_download_batch "${users}" || return ${?}
+		email_download_batch ${odir} "${users}" || return ${?}
 
 		res=${?}
 		[ ${res} -gt 0 ] && break
