@@ -68,7 +68,7 @@ email_run() {
 	mkdir -p ${odir}/${matter} || return ${?}
 
 	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
-	for ((i=1; ${i} < ${naccounts}; i+=${batchstep})); do
+	for ((i=1; ${i} <= ${naccounts}; i+=${batchstep})); do
 		floor=${i}
 		ceiling=$((${floor} + ${batchstep} - 1))
 		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
