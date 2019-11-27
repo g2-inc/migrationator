@@ -51,7 +51,16 @@ sanity_checks() {
 }
 
 cleanup() {
+	local o
 	local res
+
+	while getopts 'C' o; do
+		case "${o}" in
+			C)
+				return 0
+				;;
+		esac
+	done
 
 	$(echo ${verb}_need_matter)
 	res=${?}

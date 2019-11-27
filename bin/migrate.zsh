@@ -43,6 +43,8 @@ TOPDIR=$(get_topdir ${0})
 . ${TOPDIR}/../lib/util.zsh
 
 main() {
+	local noclean
+	local o
 	local res
 	local self
 	local verb
@@ -50,9 +52,17 @@ main() {
 	self=${1}
 	shift
 
+	while getopts 'C' o; do
+		case "${o}" in
+			C)
+				noclean="-C"
+				;;
+		esac
+	done
+
 	verb=${@[${OPTIND}]}
 	[ -z "${verb}" ] && usage ${self}
-	shift
+	shift ${OPTIND}
 	sanity_checks ${self} ${verb} || exit 1
 
 	# We passed sanity checks, so we know this verb is supported.
@@ -72,7 +82,7 @@ main() {
 	$(echo ${verb}_run) $@
 	res=${?}
 
-	cleanup
+	cleanup ${noclean}
 
 	return ${res}
 }
