@@ -43,7 +43,7 @@ email_init_batch() {
 			continue
 		fi
 
-		echo "[*] Initiating mail export of account ${acct}"
+		log_info_arg "[*] Initiating mail export of account ${acct}"
 
 		if [ ! -z "${sdate}" ]; then
 			_start="start ${sdate}"
@@ -56,9 +56,9 @@ email_init_batch() {
 		    ${=_start} \
 		    accounts ${acct})
 		res=${?}
+		log_debug_arg "${output}"
 		if [ ${res} -gt 0 ]; then
-			echo "    [-] Unable to initiate mail vault export of ${acct}"
-			echo "${output}"
+			log_error_arg "    [-] Unable to initiate mail vault export of ${acct}"
 			return 1
 		fi
 
@@ -75,7 +75,7 @@ email_execute_batch() {
 	local users
 
 	users=${1}
-	echo "[+] Exports in this batch initiated. Now waiting for download availability."
+	log_info_arg "[+] Exports in this batch initiated. Now waiting for download availability."
 	while true; do
 		dlready=1
 		echo ${users} | while read line; do
@@ -107,7 +107,8 @@ email_execute_batch() {
 					;;
 			esac
 
-			echo "[*] ${acct} status: ${exportstatus}"
+			log_info_arg "[*] ${acct} status: ${exportstatus}"
+			log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
 			sleep 60
 		done
 
@@ -142,13 +143,13 @@ email_download_batch() {
 
 		mkdir -p ${odir}/${matter}/${acct}
 
-		echo "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
+		log_info_arg "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
 
 		output=$(${GAM} download export ${matter} ${exportname} \
 		    targetfolder ${odir}/${matter}/${acct})
 		res=${?}
+		log_debug_arg "${output}"
 		if [ ${res} -gt 0 ]; then
-			echo "${output}"
 			return ${res}
 		fi
 	done

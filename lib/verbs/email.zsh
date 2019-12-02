@@ -59,13 +59,13 @@ email_run() {
 	done
 
 	if [ ! -f "${ifile}" ]; then
-		echo "Please specify the input file with -i"
-		echo "${ifile} does not exist"
+		log_error_arg "Please specify the input file with -i"
+		log_error_arg "${ifile} does not exist"
 		exit 1
 	fi
 
 	if [ -z "${odir}" ]; then
-		echo "Please specify the output directory with -o"
+		log_error_arg "Please specify the output directory with -o"
 		exit 1
 	fi
 

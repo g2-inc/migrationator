@@ -41,6 +41,7 @@ TOPDIR=$(get_topdir ${0})
 
 . ${TOPDIR}/../lib/email.zsh
 . ${TOPDIR}/../lib/util.zsh
+. ${TOPDIR}/../lib/log.zsh
 
 main() {
 	local noclean
@@ -52,10 +53,13 @@ main() {
 	self=${1}
 	shift
 
-	while getopts 'C' o; do
+	while getopts 'Cv' o; do
 		case "${o}" in
 			C)
 				noclean="-C"
+				;;
+			v)
+				inc_verbosity
 				;;
 		esac
 	done
@@ -64,6 +68,8 @@ main() {
 	[ -z "${verb}" ] && usage ${self}
 	shift ${OPTIND}
 	sanity_checks ${self} ${verb} || exit 1
+
+	trap "cleanup ${noclean}" SIGINT
 
 	# We passed sanity checks, so we know this verb is supported.
 	. ${TOPDIR}/../lib/verbs/${verb}.zsh
@@ -77,6 +83,7 @@ main() {
 			return ${res}
 		fi
 
+		log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
 		sleep 60
 	fi
 	$(echo ${verb}_run) $@

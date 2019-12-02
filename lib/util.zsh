@@ -42,7 +42,7 @@ sanity_checks() {
 		userlist)
 			;;
 		*)
-			echo "Unknown verb ${verb}"
+			log_error_arg "Unknown verb ${verb}"
 			usage ${self}
 			;;
 	esac
