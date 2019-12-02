@@ -27,9 +27,11 @@
 email_init_batch() {
 	local output
 	local res
+	local sdate
 	local users
 
-	users=${1}
+	sdate=${1}
+	users=${2}
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
 		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
@@ -43,11 +45,15 @@ email_init_batch() {
 
 		echo "[*] Initiating mail export of account ${acct}"
 
+		if [ ! -z "${sdate}" ]; then
+			_start="start ${sdate}"
+		fi
 		exportname="export-mail-${acct:gs/@/_}"
 		output=$(${GAM} create export \
 		    format pst \
 		    name ${exportname} \
 		    matter ${matter} corpus mail \
+		    ${=_start} \
 		    accounts ${acct})
 		res=${?}
 		if [ ${res} -gt 0 ]; then

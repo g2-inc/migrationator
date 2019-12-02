@@ -34,11 +34,12 @@ email_run() {
 	local o
 	local odir
 	local res
+	local sdate
 	local users
 
 	batchstep=15
 
-	while getopts 'b:i:o:' o; do
+	while getopts 'b:i:o:s:' o; do
 		case "${o}" in
 			b)
 				batchstep=${OPTARG}
@@ -48,6 +49,9 @@ email_run() {
 				;;
 			o)
 				odir="${OPTARG}"
+				;;
+			s)
+				sdate="${OPTARG}"
 				;;
 			*)
 				;;
@@ -75,7 +79,7 @@ email_run() {
 
 		users=$(sed -n ${floor},${ceiling}p ${ifile})
 
-		email_init_batch "${users}" || return ${?}
+		email_init_batch "${sdate}" "${users}" || return ${?}
 		email_execute_batch "${users}" || return ${?}
 		email_download_batch ${odir} "${users}" || return ${?}
 
