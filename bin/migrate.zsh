@@ -1,4 +1,4 @@
-#!/usr/local/bin/zsh
+#!/usr/bin/env zsh
 #-
 # Copyright (c) 2019 Huntington Ingalls Industries
 # Author: Shawn Webb <shawn.webb@hii-tsd.com>
@@ -24,7 +24,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-GAM="${HOME}/projects/GAM/src/gam.py"
+GAM="GAM"
 
 matter="migration-$(date '+%F_%T')"
 
