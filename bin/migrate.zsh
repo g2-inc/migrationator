@@ -39,6 +39,7 @@ get_topdir() {
 
 TOPDIR=$(get_topdir ${0})
 
+. ${TOPDIR}/../lib/drive.zsh
 . ${TOPDIR}/../lib/email.zsh
 . ${TOPDIR}/../lib/util.zsh
 . ${TOPDIR}/../lib/log.zsh

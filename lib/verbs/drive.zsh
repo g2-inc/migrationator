@@ -24,54 +24,68 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-usage() {
-	echo "USAGE: ${1} -i /path/to/input/file verb" 1>&2
-	exit 1
+drive_need_matter() {
+	return 1
 }
 
-sanity_checks() {
-	local self
-	local verb
-
-	self=${1}
-	verb=${2}
-
-	case "${verb}" in
-		drive)
-			;;
-		email)
-			;;
-		userlist)
-			;;
-		*)
-			log_error_arg "Unknown verb ${verb}"
-			usage ${self}
-			;;
-	esac
-
-	return 0
-}
-
-cleanup() {
+drive_run() {
+	local batchstep
+	local naccounts
 	local o
+	local odir
 	local res
+	local sdate
+	local users
 
-	while getopts 'C' o; do
+	batchstep=15
+
+	while getopts 'b:i:o:s:' o; do
 		case "${o}" in
-			C)
-				return 0
+			b)
+				batchstep=${OPTARG}
+				;;
+			i)
+				ifile="${OPTARG}"
+				;;
+			o)
+				odir="${OPTARG}"
+				;;
+			s)
+				sdate="${OPTARG}"
+				;;
+			*)
 				;;
 		esac
 	done
 
-	$(echo ${verb}_need_matter)
-	res=${?}
-	if [ ${res} -eq 0 ]; then
-		return 0
+	if [ ! -f "${ifile}" ]; then
+		log_error_arg "Please specify the input file with -i"
+		log_error_arg "${ifile} does not exist"
+		exit 1
 	fi
 
-	${GAM} update matter ${matter} action close || return ${?}
-	${GAM} update matter ${matter} action delete || return ${?}
+	if [ -z "${odir}" ]; then
+		log_error_arg "Please specify the output directory with -o"
+		exit 1
+	fi
+
+	mkdir -p ${odir}/${matter} || return ${?}
+
+	naccounts=$(wc -l ${ifile} | awk '{print $1;}')
+	for ((i=1; ${i} <= ${naccounts}; i+=${batchstep})); do
+		floor=${i}
+		ceiling=$((${floor} + ${batchstep} - 1))
+		echo "==== $((${floor} / ${batchstep})) : $(date '+%F %T') ===="
+
+		users=$(sed -n ${floor},${ceiling}p ${ifile})
+
+		drive_init_batch "${sdate}" "${users}" || return ${?}
+		drive_execute_batch "${users}" || return ${?}
+		drive_download_batch ${odir} "${users}" || return ${?}
+
+		res=${?}
+		[ ${res} -gt 0 ] && break
+	done
 
 	return 0
 }

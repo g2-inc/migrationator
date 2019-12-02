@@ -24,7 +24,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-email_init_batch() {
+drive_init_batch() {
 	local output
 	local res
 	local sdate
@@ -34,31 +34,26 @@ email_init_batch() {
 	users=${2}
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
 		if [ -z "${haslicense}" ]; then
 			continue
 		fi
 
-		log_info_arg "[*] Initiating mail export of account ${acct}"
+		log_info_arg "[*] Initiating drive export of account ${acct}"
 
 		if [ ! -z "${sdate}" ]; then
 			_start="start ${sdate}"
 		fi
-		exportname="export-mail-${acct:gs/@/_}"
+		exportname="export-drive-${acct:gs/@/_}"
 		output=$(${GAM} create export \
-		    format pst \
 		    name ${exportname} \
-		    matter ${matter} corpus mail \
+		    matter ${matter} corpus drive \
 		    ${=_start} \
 		    accounts ${acct})
 		res=${?}
 		log_debug_arg "${output}"
 		if [ ${res} -gt 0 ]; then
-			log_error_arg "    [-] Unable to initiate mail vault export of ${acct}"
+			log_error_arg "    [-] Unable to initiate drive vault export of ${acct}"
 			return 1
 		fi
 
@@ -69,7 +64,7 @@ email_init_batch() {
 	return 0
 }
 
-email_execute_batch() {
+drive_execute_batch() {
 	local dlready
 	local output
 	local res
@@ -81,16 +76,12 @@ email_execute_batch() {
 		dlready=1
 		echo ${users} | while read line; do
 			acct=$(echo ${line} | awk -F ',' '{print $1;}')
-			hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 			haslicense=$(echo ${line} | grep -Fi "google vault")
-			if [ ${hasmbox} = "False" ]; then
-				continue
-			fi
 			if [ -z "${haslicense}" ]; then
 				continue
 			fi
 
-			exportname="export-mail-${acct:gs/@/_}"
+			exportname="export-drive-${acct:gs/@/_}"
 			exportinfo=$(${GAM} info export ${matter} ${exportname})
 			exportstatus=$(echo ${exportinfo} | \
 			    grep '^ status: ' | \
@@ -119,7 +110,7 @@ email_execute_batch() {
 	return 0
 }
 
-email_download_batch() {
+drive_download_batch() {
 	local odir
 	local output
 	local res
@@ -131,20 +122,16 @@ email_download_batch() {
 
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
 		if [ -z "${haslicense}" ]; then
 			continue
 		fi
 
-		exportname="export-mail-${acct:gs/@/_}"
+		exportname="export-drive-${acct:gs/@/_}"
 
 		mkdir -p ${odir}/${matter}/${acct}
 
-		log_info_arg "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
+		log_info_arg "[+] Downloading ${acct} drive to ${odir}/${matter}/${acct}"
 
 		output=$(${GAM} download export ${matter} ${exportname} \
 		    targetfolder ${odir}/${matter}/${acct})
