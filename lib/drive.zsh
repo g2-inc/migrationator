@@ -133,7 +133,9 @@ drive_download_batch() {
 
 		log_info_arg "[+] Downloading ${acct} drive to ${odir}/${matter}/${acct}"
 
-		output=$(${GAM} download export ${matter} ${exportname} \
+		output=$(${GAM} download export ${matter} \
+		    ${exportname} \
+		    noextract \
 		    targetfolder ${odir}/${matter}/${acct})
 		res=${?}
 		log_debug_arg "${output}"

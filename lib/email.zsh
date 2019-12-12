@@ -34,11 +34,7 @@ email_init_batch() {
 	users=${2}
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
 		if [ -z "${haslicense}" ]; then
 			continue
 		fi
@@ -81,11 +77,7 @@ email_execute_batch() {
 		dlready=1
 		echo ${users} | while read line; do
 			acct=$(echo ${line} | awk -F ',' '{print $1;}')
-			hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 			haslicense=$(echo ${line} | grep -Fi "google vault")
-			if [ ${hasmbox} = "False" ]; then
-				continue
-			fi
 			if [ -z "${haslicense}" ]; then
 				continue
 			fi
@@ -131,11 +123,7 @@ email_download_batch() {
 
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		hasmbox=$(echo ${line} | awk -F ',' '{print $2;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ ${hasmbox} = "False" ]; then
-			continue
-		fi
 		if [ -z "${haslicense}" ]; then
 			continue
 		fi
@@ -146,7 +134,9 @@ email_download_batch() {
 
 		log_info_arg "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
 
-		output=$(${GAM} download export ${matter} ${exportname} \
+		output=$(${GAM} download export ${matter} \
+		    ${exportname} \
+		    noextract \
 		    targetfolder ${odir}/${matter}/${acct})
 		res=${?}
 		log_debug_arg "${output}"

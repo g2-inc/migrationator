@@ -36,7 +36,6 @@ userlist_run() {
 			o)
 				${GAM} print \
 				    users \
-				    ismailboxsetup \
 				    licenses | sed 1d > ${OPTARG} || return ${?}
 				;;
 		esac
