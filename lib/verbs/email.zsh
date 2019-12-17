@@ -37,7 +37,7 @@ email_run() {
 	local sdate
 	local users
 
-	batchstep=15
+	batchstep=5
 
 	while getopts 'b:i:o:s:' o; do
 		case "${o}" in
