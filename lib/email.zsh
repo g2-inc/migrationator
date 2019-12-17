@@ -87,20 +87,26 @@ email_execute_batch() {
 			exportstatus=$(echo ${exportinfo} | \
 			    grep '^ status: ' | \
 			    awk '{print $2;}')
+			log_info_arg "[*] ${acct} status: ${exportstatus}"
 			case "${exportstatus}" in
 				"COMPLETED")
 					;;
 				"IN_PROGRESS")
 					dlready=0
 					;;
+				"FAILED")
+					log_error_arg "[-] Export of account ${acct} failed. Error output:"
+					log_error_arg "${exportinfo}"
+					return 1
+					;;
 				*)
 					# Unknown status
-					echo ${exportinfo}
+					log_error_arg "[-] Export of account ${acct} received an unknown status. Error output:"
+					log_error_arg "${exportinfo}"
 					return 1
 					;;
 			esac
 
-			log_info_arg "[*] ${acct} status: ${exportstatus}"
 			log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
 			sleep 60
 		done
