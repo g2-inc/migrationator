@@ -58,8 +58,8 @@ email_init_batch() {
 			return 1
 		fi
 
-		log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
-		sleep 60
+		log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
+		sleep $(config_get_value sleep)
 	done
 
 	return 0
@@ -107,8 +107,8 @@ email_execute_batch() {
 					;;
 			esac
 
-			log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
-			sleep 60
+			log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
+			sleep $(config_get_value sleep)
 		done
 
 		[ ${dlready} -eq 1 ] && break

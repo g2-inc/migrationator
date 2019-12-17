@@ -39,6 +39,7 @@ get_topdir() {
 
 TOPDIR=$(get_topdir ${0})
 
+. ${TOPDIR}/../lib/config.zsh
 . ${TOPDIR}/../lib/drive.zsh
 . ${TOPDIR}/../lib/email.zsh
 . ${TOPDIR}/../lib/util.zsh
@@ -54,10 +55,15 @@ main() {
 	self=${1}
 	shift
 
-	while getopts 'Cv' o; do
+	config_set_defaults
+
+	while getopts 'Cvs:' o; do
 		case "${o}" in
 			C)
 				noclean="-C"
+				;;
+			s)
+				config_set_value "sleep" ${OPTARG}
 				;;
 			v)
 				inc_verbosity
@@ -84,8 +90,8 @@ main() {
 			return ${res}
 		fi
 
-		log_debug_arg "[*] Sleeping for 60 seconds due to API quota."
-		sleep 60
+		log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
+		sleep $(config_get_value sleep)
 	fi
 	$(echo ${verb}_run) $@
 	res=${?}
