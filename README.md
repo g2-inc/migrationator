@@ -11,13 +11,17 @@ export of all account data held in Vault for all Vault-licensed users.
 Currently supported exports:
 
 * email as PST files
-* Drive (somewhat untested--experimental support)
+* Drive as zip files
 
 ## Dependencies
 
 * ZSH
 * Python 3.6
 * GAM installed as `GAM`
+  * Optionally specify `-g /path/to/alternate/gam.py` as a global
+    command-line option.
+  * IMPORTANT: Make sure to perform the initial GAM setup prior to
+    using the Migrationator.
 
 ## Usage
 
