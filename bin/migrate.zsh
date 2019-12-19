@@ -57,10 +57,13 @@ main() {
 
 	config_set_defaults
 
-	while getopts 'Cvs:' o; do
+	while getopts 'Cvg:s:' o; do
 		case "${o}" in
 			C)
 				noclean="-C"
+				;;
+			g)
+				GAM="${OPTARG}"
 				;;
 			s)
 				config_set_value "sleep" ${OPTARG}
