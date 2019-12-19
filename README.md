@@ -44,8 +44,8 @@ $ bin/migrationator.zsh drive -i /tmp/userlist.csv -o /tmp/migration
 ## Development
 
 The directory structure follows a heirarchy similar to a root
-filesystem. Library code goes in lib while the application code
-resides in bin.
+filesystem. Library code goes in `lib/migrationator` while the
+application code resides in `bin`.
 
 The Migrationator takes a verb as an argument. As of this writing, the
 current supported verbs are:
@@ -54,13 +54,15 @@ current supported verbs are:
 1. email
 1. userlist
 
-Verbs are modular and reside in lib/verbs. Adding a new verb is as
-easy as performing the following steps:
+Verbs are modular and reside in `lib/migrationator/verbs`. Adding a
+new verb is as easy as performing the following steps:
 
-1. Adding the verb to the `lib/util.zsh:sanity_checks` whitelist
-1. Adding the verb's code to the `lib/verbs` directory. Filename
-   format: ${VERBNAME}.zsh. For example, a hypothetical `calendar`
-   verb's code would reside in the `lib/verbs/calendar.zsh` file.
+1. Adding the verb to the `lib/migrationator/util.zsh:sanity_checks`
+   whitelist.
+1. Adding the verb's code to the `lib/migrationator/verbs` directory.
+   Filename format: ${VERBNAME}.zsh. For example, a hypothetical
+   `calendar` verb's code would reside in the
+   `lib/migrationator/verbs/calendar.zsh` file.
 1. Implementing required functions.
 
 Each verb must implement the following functions:
@@ -69,6 +71,6 @@ Each verb must implement the following functions:
    be opened, 0 otherwise.
 1. `${VERBNAME}_run`: Execute the verb
 
-Verbs can use any function in `lib/*.zsh`. Verbs must not rely on
-other verbs. Each verb is lazily-loaded based on command-line
-arguments.
+Verbs can use any function in `lib/migrationator/*.zsh`. Verbs must
+not rely on other verbs. Each verb is lazily-loaded based on
+command-line arguments.

@@ -33,17 +33,17 @@ get_topdir() {
 
 	self=${1}
 
-	echo $(realpath $(dirname ${self}))
+	echo $(realpath $(dirname ${self})/..)
 	return ${?}
 }
 
 TOPDIR=$(get_topdir ${0})
 
-. ${TOPDIR}/../lib/config.zsh
-. ${TOPDIR}/../lib/drive.zsh
-. ${TOPDIR}/../lib/email.zsh
-. ${TOPDIR}/../lib/util.zsh
-. ${TOPDIR}/../lib/log.zsh
+. ${TOPDIR}/lib/migrationator/config.zsh
+. ${TOPDIR}/lib/migrationator/drive.zsh
+. ${TOPDIR}/lib/migrationator/email.zsh
+. ${TOPDIR}/lib/migrationator/util.zsh
+. ${TOPDIR}/lib/migrationator/log.zsh
 
 main() {
 	local noclean
@@ -79,7 +79,7 @@ main() {
 	trap "cleanup ${noclean}" SIGINT
 
 	# We passed sanity checks, so we know this verb is supported.
-	. ${TOPDIR}/../lib/verbs/${verb}.zsh
+	. ${TOPDIR}/lib/migrationator/verbs/${verb}.zsh
 	$(echo ${verb}_need_matter)
 	if [ ${?} -eq 1 ]; then
 		${GAM} create vaultmatter \
