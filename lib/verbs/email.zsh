@@ -37,12 +37,17 @@ email_run() {
 	local sdate
 	local users
 
-	batchstep=5
+	config_set_value "verb:batchstep" 5
 
 	while getopts 'b:i:o:s:' o; do
 		case "${o}" in
 			b)
-				batchstep=${OPTARG}
+				config_set_value "verb:batchstep" ${OPTARG}
+				res=${?}
+				if [ ${res} -gt 0 ]; then
+					log_error_arg "[-] Unable to set batchstep config value"
+					return 1
+				fi
 				;;
 			i)
 				ifile="${OPTARG}"
@@ -57,6 +62,9 @@ email_run() {
 				;;
 		esac
 	done
+
+	batchstep=$(config_get_value "verb:batchstep")
+	log_debug_arg "[*] batchstep: ${batchstep}"
 
 	if [ ! -f "${ifile}" ]; then
 		log_error_arg "Please specify the input file with -i"

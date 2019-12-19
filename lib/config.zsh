@@ -25,28 +25,57 @@
 # SUCH DAMAGE.
 
 _m_sleep=57
+declare -A _m_verb_settings
 
 config_set_defaults() {
 	return 0
 }
 
+config_is_verb_setting() {
+	local verb
+
+	verb="${1}"
+
+	if [ "${verb[0,5]}" = "verb:" ]; then
+		return 0
+	fi
+
+	return 1
+}
+
 config_set_value() {
+	local name
+
+	set -x
+
 	case "${1}" in
 		"sleep")
 			_m_sleep=${2}
 			;;
 		*)
+			if config_is_verb_setting "${1}"; then
+				name=${1[6,${#1}]}
+				_m_verb_settings[${name}]=${2}
+				return 0
+			fi
 			return 1
 	esac
 	return 0
 }
 
 config_get_value() {
+	local name
+
 	case "${1}" in
 		"sleep")
 			echo ${_m_sleep}
 			;;
 		*)
+			if config_is_verb_setting "${1}"; then
+				name=${1[6,${#1}]}
+				echo ${_m_verb_settings[${name}]}
+				return 0
+			fi
 			return 1
 	esac
 	return 0
