@@ -28,6 +28,7 @@ email_init_batch() {
 	local output
 	local res
 	local sdate
+	local terms
 	local users
 
 	sdate=${1}
@@ -44,13 +45,15 @@ email_init_batch() {
 		if [ ! -z "${sdate}" ]; then
 			_start="start ${sdate}"
 		fi
+		terms="from:${acct} OR to:${acct}"
 		exportname="export-mail-${acct:gs/@/_}"
 		output=$(${GAM} create export \
 		    format pst \
 		    name ${exportname} \
 		    matter ${matter} corpus mail \
 		    ${=_start} \
-		    accounts ${acct})
+		    everyone \
+		    terms ${terms})
 		res=${?}
 		log_debug_arg "${output}"
 		if [ ${res} -gt 0 ]; then
