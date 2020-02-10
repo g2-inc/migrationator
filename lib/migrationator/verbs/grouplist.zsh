@@ -1,6 +1,6 @@
 #!/usr/local/bin/zsh
 #-
-# Copyright (c) 2019-2020 Huntington Ingalls Industries
+# Copyright (c) 2020 Huntington Ingalls Industries
 # Author: Shawn Webb <shawn.webb@hii-tsd.com>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -24,83 +24,26 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-usage() {
-	echo "USAGE: ${1} -i /path/to/input/file verb" 1>&2
-	exit 1
-}
-
-sanity_checks() {
-	local self
-	local verb
-
-	self=${1}
-	verb=${2}
-
-	case "${verb}" in
-		drive)
-			;;
-		email)
-			;;
-		grouplist)
-			;;
-		userlist)
-			;;
-		*)
-			log_error_arg "Unknown verb ${verb}"
-			usage ${self}
-			;;
-	esac
-
+grouplist_need_matter() {
 	return 0
 }
 
-cleanup() {
+grouplist_run() {
+	local line
 	local o
-	local res
 
-	while getopts 'C' o; do
+	while getopts "o:" o; do
 		case "${o}" in
-			C)
-				return 0
+			o)
+				rm -f ${OPTARG}
+				touch ${OPTARG} || return ${?}
+				${GAM} print \
+				    groups | sed 1d | while read line; do
+					echo "${line},Google Vault" >> ${OPTARG}
+				done
 				;;
 		esac
 	done
-
-	$(echo ${verb}_need_matter)
-	res=${?}
-	if [ ${res} -eq 0 ]; then
-		return 0
-	fi
-
-	${GAM} update matter ${matter} action close || return ${?}
-	${GAM} update matter ${matter} action delete || return ${?}
-
-	return 0
-}
-
-response_contains_error() {
-	local response
-
-	response="${1}"
-
-	if [[ ${response} =~ "ERROR:" ]]; then
-		return 0
-	fi
-
-	return 1
-}
-
-response_get_error_code() {
-	local response
-
-	response="${1}"
-
-	if ! response_contains_error ${response}; then
-		echo 0
-		return 0
-	fi
-
-	echo ${response} | awk '{print $2;}' | sed 's,:,,'
 
 	return 0
 }
