@@ -75,3 +75,30 @@ cleanup() {
 
 	return 0
 }
+
+response_contains_error() {
+	local response
+
+	response="${1}"
+
+	if [[ ${response} =~ "ERROR:" ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
+response_get_error_code() {
+	local response
+
+	response="${1}"
+
+	if ! response_contains_error ${response}; then
+		echo 0
+		return 0
+	fi
+
+	echo ${response} | awk '{print $2;}' | sed 's,:,,'
+
+	return 0
+}
