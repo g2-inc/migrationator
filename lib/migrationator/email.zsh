@@ -1,6 +1,6 @@
 #!/usr/local/bin/zsh
 #-
-# Copyright (c) 2019 Huntington Ingalls Industries
+# Copyright (c) 2019-2020 Huntington Ingalls Industries
 # Author: Shawn Webb <shawn.webb@hii-tsd.com>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,9 @@
 # SUCH DAMAGE.
 
 email_init_batch() {
+	local breakout
 	local output
+	local rcode
 	local res
 	local sdate
 	local terms
@@ -47,19 +49,32 @@ email_init_batch() {
 		fi
 		terms="from:${acct} OR to:${acct}"
 		exportname="export-mail-${acct:gs/@/_}"
-		output=$(${GAM} create export \
-		    format pst \
-		    name ${exportname} \
-		    matter ${matter} corpus mail \
-		    ${=_start} \
-		    everyone \
-		    terms ${terms})
-		res=${?}
-		log_debug_arg "${output}"
-		if [ ${res} -gt 0 ]; then
-			log_error_arg "    [-] Unable to initiate mail vault export of ${acct}"
-			return 1
-		fi
+
+		while true; do
+			breakout=1
+			output=$(${GAM} create export \
+			    format pst \
+			    name ${exportname} \
+			    matter ${matter} corpus mail \
+			    ${=_start} \
+			    everyone \
+			    terms ${terms} 2>&1)
+			res=${?}
+			log_debug_arg "${output}"
+			if [ ${res} -gt 0 ] || response_contains_error "${output}"; then
+				log_error_arg "    [-] Unable to initiate mail vault export of ${acct}"
+				rcode=$(response_get_error_code "${output}")
+				if [ ${rcode} -eq 429 ]; then
+					log_info_arg "    [*] Quota exceeded. Retrying after 20 minutes."
+					sleep $((20 * 60))
+					breakout=0
+				fi
+			fi
+
+			if [ ${breakout} -gt 0 ]; then
+				break
+			fi
+		done
 
 		log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
 		sleep $(config_get_value sleep)
@@ -86,7 +101,7 @@ email_execute_batch() {
 			fi
 
 			exportname="export-mail-${acct:gs/@/_}"
-			exportinfo=$(${GAM} info export ${matter} ${exportname})
+			exportinfo=$(${GAM} info export ${matter} ${exportname} 2>&1)
 			exportstatus=$(echo ${exportinfo} | \
 			    grep '^ status: ' | \
 			    awk '{print $2;}')
@@ -121,8 +136,10 @@ email_execute_batch() {
 }
 
 email_download_batch() {
+	local breakout
 	local odir
 	local output
+	local rcode
 	local res
 	local users
 
@@ -131,27 +148,39 @@ email_download_batch() {
 	echo "[+] Downloads available. Downloading this batch now."
 
 	echo ${users} | while read line; do
-		acct=$(echo ${line} | awk -F ',' '{print $1;}')
-		haslicense=$(echo ${line} | grep -Fi "google vault")
-		if [ -z "${haslicense}" ]; then
-			continue
-		fi
+		while true; do
+			breakout=1
+			acct=$(echo ${line} | awk -F ',' '{print $1;}')
+			haslicense=$(echo ${line} | grep -Fi "google vault")
+			if [ -z "${haslicense}" ]; then
+				break
+			fi
 
-		exportname="export-mail-${acct:gs/@/_}"
+			exportname="export-mail-${acct:gs/@/_}"
 
-		mkdir -p ${odir}/${matter}/${acct}
+			mkdir -p ${odir}/${matter}/${acct}
 
-		log_info_arg "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
+			log_info_arg "[+] Downloading ${acct} mail to ${odir}/${matter}/${acct}"
 
-		output=$(${GAM} download export ${matter} \
-		    ${exportname} \
-		    noextract \
-		    targetfolder ${odir}/${matter}/${acct})
-		res=${?}
-		log_debug_arg "${output}"
-		if [ ${res} -gt 0 ]; then
-			return ${res}
-		fi
+			output=$(${GAM} download export ${matter} \
+			    ${exportname} \
+			    noextract \
+			    targetfolder ${odir}/${matter}/${acct} 2>&1)
+			res=${?}
+			log_debug_arg "${output}"
+			if [ ${res} -gt 0 ]; then
+				rcode=$(response_get_error_code "${output}")
+				if [ ${rcode} -eq 429 ]; then
+					log_info_arg "[*] Quota exceeded. Retrying after 20 minutes."
+					sleep $((20 * 60))
+					breakout=0
+				fi
+				return ${res}
+			fi
+			if [ ${breakout} -gt 0 ]; then
+				break
+			fi
+		done
 	done
 
 	return 0
