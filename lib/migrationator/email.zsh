@@ -25,7 +25,10 @@
 # SUCH DAMAGE.
 
 email_init_batch() {
+	local _end
+	local _start
 	local breakout
+	local edate
 	local output
 	local rcode
 	local res
@@ -35,6 +38,7 @@ email_init_batch() {
 
 	sdate=${1}
 	users=${2}
+	edate=${3}
 	echo ${users} | while read line; do
 		acct=$(echo ${line} | awk -F ',' '{print $1;}')
 		haslicense=$(echo ${line} | grep -Fi "google vault")
@@ -47,6 +51,9 @@ email_init_batch() {
 		if [ ! -z "${sdate}" ]; then
 			_start="start ${sdate}"
 		fi
+		if [ ! -z "${edate}" ]; then
+			_end="end ${edate}"
+		fi
 		terms="from:${acct} OR to:${acct}"
 		exportname="export-mail-${acct:gs/@/_}"
 
@@ -57,6 +64,7 @@ email_init_batch() {
 			    name ${exportname} \
 			    matter ${matter} corpus mail \
 			    ${=_start} \
+			    ${=_end} \
 			    everyone \
 			    terms ${terms} 2>&1)
 			res=${?}
@@ -64,20 +72,21 @@ email_init_batch() {
 			if [ ${res} -gt 0 ] || response_contains_error "${output}"; then
 				log_error_arg "    [-] Unable to initiate mail vault export of ${acct}"
 				rcode=$(response_get_error_code "${output}")
-				if [ ${rcode} -eq 429 ]; then
+				echo "[-] rcode is \"${rcode}\""
+				if [ "${rcode}" -eq 429 ]; then
 					log_info_arg "    [*] Quota exceeded. Retrying after 20 minutes."
 					sleep $((20 * 60))
-					breakout=0
 				fi
+				breakout=0
 			fi
+
+			log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
+			sleep $(config_get_value sleep)
 
 			if [ ${breakout} -gt 0 ]; then
 				break
 			fi
 		done
-
-		log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
-		sleep $(config_get_value sleep)
 	done
 
 	return 0
@@ -121,7 +130,15 @@ email_execute_batch() {
 					# Unknown status
 					log_error_arg "[-] Export of account ${acct} received an unknown status. Error output:"
 					log_error_arg "${exportinfo}"
-					return 1
+					rcode=$(response_get_error_code "${exportinfo}")
+					echo "[-] rcode is \"${rcode}\""
+					if [ ${rcode} -eq 429 ]; then
+						log_info_arg "[*] Quota exceeded. Retrying after 20 minutes."
+						sleep $((20 * 60))
+						dlready=0
+					else
+						return 1
+					fi
 					;;
 			esac
 
@@ -170,13 +187,18 @@ email_download_batch() {
 			log_debug_arg "${output}"
 			if [ ${res} -gt 0 ]; then
 				rcode=$(response_get_error_code "${output}")
+				echo "[-] rcode is \"${rcode}\""
 				if [ ${rcode} -eq 429 ]; then
 					log_info_arg "[*] Quota exceeded. Retrying after 20 minutes."
 					sleep $((20 * 60))
 					breakout=0
+				else
+					return ${res}
 				fi
-				return ${res}
 			fi
+
+			log_debug_arg "[*] Sleeping for $(config_get_value sleep) seconds due to API quota."
+			sleep $(config_get_value sleep)
 			if [ ${breakout} -gt 0 ]; then
 				break
 			fi

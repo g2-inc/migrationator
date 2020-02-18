@@ -92,15 +92,24 @@ response_contains_error() {
 
 response_get_error_code() {
 	local response
+	local errcode
 
 	response="${1}"
 
-	if ! response_contains_error ${response}; then
+	if ! response_contains_error "${response}"; then
+		echo "\"${response}\" does not contain an error." >> /tmp/errcode.txt
 		echo 0
 		return 0
 	fi
 
-	echo ${response} | awk '{print $2;}' | sed 's,:,,'
+	errcode=$(echo ${response} | awk '{print $2;}' | sed 's,:,,' | awk '{$1=$1;print;}')
+	echo "errcode is \"${errcode}\"" >> /tmp/errcode.txt
+	if [[ ${errcode} =~ '^[[:digit:]]+' ]]; then
+		echo -n ${errcode}
+		return 0
+	fi
+
+	echo 0
 
 	return 0
 }

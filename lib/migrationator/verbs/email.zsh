@@ -30,6 +30,7 @@ email_need_matter() {
 
 email_run() {
 	local batchstep
+	local edate
 	local naccounts
 	local o
 	local odir
@@ -39,7 +40,7 @@ email_run() {
 
 	config_set_value "verb:batchstep" 5
 
-	while getopts 'b:i:o:s:' o; do
+	while getopts 'b:e:i:o:s:' o; do
 		case "${o}" in
 			b)
 				config_set_value "verb:batchstep" ${OPTARG}
@@ -48,6 +49,9 @@ email_run() {
 					log_error_arg "[-] Unable to set batchstep config value"
 					return 1
 				fi
+				;;
+			e)
+				edate="${OPTARG}"
 				;;
 			i)
 				ifile="${OPTARG}"
@@ -87,7 +91,7 @@ email_run() {
 
 		users=$(sed -n ${floor},${ceiling}p ${ifile})
 
-		email_init_batch "${sdate}" "${users}" || return ${?}
+		email_init_batch "${sdate}" "${users}" "${edate}" || return ${?}
 		email_execute_batch "${users}" || return ${?}
 		email_download_batch ${odir} "${users}" || return ${?}
 
